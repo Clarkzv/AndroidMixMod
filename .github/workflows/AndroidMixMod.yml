@@ -1,6 +1,9 @@
 name: AndroidMixMod workflow
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -9,36 +12,39 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v3
-      - name: set up JDK 11
+
+      - name: Set up JDK 11
         uses: actions/setup-java@v3
         with:
           java-version: '11'
           distribution: 'temurin'
           cache: gradle
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: 7.5.1
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
+
       - name: Setup NDK
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: r26
           local-cache: true
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
       - name: Build with Gradle
         run: ./gradlew build
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-      - name: Prepare to release
-        run: |
-          mkdir ../Release/signed/
-          mv ${{steps.sign_app.outputs.signedReleaseFile}} ../Release/signed/${{ env.mixmod_apk_name }}
-      - uses: "ncipollo/release-action@v1"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
         with:
-          tag: "${{ env.apk_version }}"
-          name: "AndroidMixMod"
-          artifacts: "../Release/signed/${{ env.mixmod_apk_name }}"
+          name: build-artifacts
+          path: app/build/outputs # adjust this path based on your project structure
